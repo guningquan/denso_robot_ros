@@ -63,20 +63,13 @@ or
 
 ---
 
-## 2. Robot Description Packages
 
-### 2.1. Create `vs068l_description` and `vs068r_description`
 
-- These directories should be located in `denso_robot_descriptions/`.
-- Each should contain:
-  - Mesh files (`J1.dae`, ..., `J6.dae`, `base_link.dae`)
-  - URDF and Xacro files: `vs068l.urdf`, `vs068l.urdf.xacro`, `vs068r.urdf`, `vs068r.urdf.xacro`
-  - Launch file: `vs068l.launch.xml`, `vs068r.launch.xml`
-  - Controller YAML: `denso_robot_control.yaml`
+## 3. Dual-Arm URDF/Xacro
 
-> **Note:** The Xacro files allow for parameterized and modular robot descriptions, which are included in the dual-arm robot.
-
-### 2.2. Example Xacro Inclusion
+- The dual-arm robot is described in `dual_vs068/urdf/dual_vs068.urdf.xacro`.
+- It includes both left and right arm descriptions and fixes them to the world frame with appropriate offsets.
+- Example Xacro Inclusion
 
 ```xml
 <!-- dual_vs068/urdf/dual_vs068.urdf.xacro -->
@@ -98,12 +91,6 @@ or
 </robot>
 ```
 
----
-
-## 3. Dual-Arm URDF/Xacro
-
-- The dual-arm robot is described in `dual_vs068/urdf/dual_vs068.urdf.xacro`.
-- It includes both left and right arm descriptions and fixes them to the world frame with appropriate offsets.
 
 ---
 
@@ -114,13 +101,13 @@ or
 A new launch file `denso_robot_control_modify.launch` is provided in `denso_robot_control/launch/`.  
 This file allows you to flexibly specify the robot's IP address, name, and other parameters, and loads all necessary description/configuration files for each arm.
 
-**Usage Example:**
+<!-- **Usage Example:**
 ```xml
 <include file="$(find denso_robot_control)/launch/denso_robot_control_modify.launch">
   <arg name="robot_name" value="vs068l" />
   <arg name="ip_address" value="10.240.48.66" />
 </include>
-```
+``` -->
 <!-- This launch file simplifies the process of bringing up each DENSO robot arm with custom parameters. -->
 
 ### 4.2. Dual Arm Bringup Launch
@@ -222,6 +209,12 @@ if __name__ == '__main__':
 
 ## 6. MoveIt Configuration
 
+### 6.1. Build the MoveIt configuration by running: 
+```bash
+rosrun moveit_setup_assistant moveit_setup_assistant.
+```
+Then configure your MoveIt setup using the dual-arm URDF or Xacro file.
+
 ### 6.1. Controller Configuration
 
 - The file `dual_vs068_moveit_config/config/ros_controllers.yaml` should define controllers for both arms:
@@ -253,9 +246,32 @@ controller_list:
       - vs068r_joint_6
 ```
 
-### 6.2. MoveIt Launch
+### 6.2. MoveIt Launch Setup
 
-- Use `dual_vs068_moveit_config/launch/dual_vs068_moveit.launch` to start MoveIt for the dual-arm robot.
+- Configure `dual_vs068_moveit_config/launch/dual_vs068_moveit.launch` to launch MoveIt for the dual-arm robot.
+
+```xml
+<launch>
+  <!-- Load joint limits, kinematics, planning pipeline, etc -->
+  <include file="$(find dual_vs068_moveit_config)/launch/planning_context.launch">
+    <arg name="load_robot_description" value="false"/> 
+  </include>
+
+  <!-- Load controllers.yaml and joint limits -->
+  <rosparam file="$(find dual_vs068_moveit_config)/config/ros_controllers.yaml" command="load" />
+
+  <!-- Start MoveIt move_group node -->
+  <include file="$(find dual_vs068_moveit_config)/launch/move_group.launch"/>
+
+
+  <!-- RViz with MoveIt config -->
+  <include file="$(find dual_vs068_moveit_config)/launch/moveit_rviz.launch">
+    <!-- <arg name="config" value="true"/> -->
+  </include>
+  
+</launch>
+
+```
 
 ---
 
