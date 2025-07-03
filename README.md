@@ -13,7 +13,7 @@ Before proceeding, please refer to the official [denso_robot_ros Wiki](https://w
 
 These packages should each contain the necessary mesh files, URDF/Xacro files, and configuration files for a single VS-068 robot. This step ensures that both arms are properly described and ready for integration into the dual-arm system.
 
-### 2.1.1. Update Joint Names for Consistency
+### 2.1. Update Joint Names for Consistency
 
 When creating or modifying the description and configuration files, ensure that all joint names follow the convention:
 - For the left arm: `vs068l_joint_1`, `vs068l_joint_2`, ..., `vs068l_joint_6`
@@ -61,11 +61,60 @@ or
 
 > **Note:** This naming consistency is required for MoveIt and controller compatibility. All configuration and description files must use the correct joint names for each arm.
 
+### 2.2. Configuration in Launch Files
+
+Each robot's launch file must specify the `robot_prefix` parameter. For example, in `denso_robot_descriptions/vs068l_description/vs068l.launch.xml`:
+
+```xml
+<launch>
+	<param name="controller_type" value="8"/>
+	<param name="robot_name" value="VS068A4-AV6-NNN-NNN A"/>
+		<!-- gnq -->
+	<param name="robot_prefix" value="vs068l"/>  
+	<param name="robot_joints" value="6"/>
+	<param name="vs068l_joint_1" value="1"/>
+	<param name="vs068l_joint_2" value="1"/>
+	<param name="vs068l_joint_3" value="1"/>
+	<param name="vs068l_joint_4" value="1"/>
+	<param name="vs068l_joint_5" value="1"/>
+	<param name="vs068l_joint_6" value="1"/>
+	<param name="arm_group" value="0"/>
+</launch>
+```
+
 ---
 
+## 3. Hardware Interface Modification
 
+To support the dual-arm system with proper joint naming, the hardware interface in `denso_robot_control/src/denso_robot_hw.cpp` has been modified to support dynamic joint prefix configuration. This modification allows the system to automatically generate joint names based on the robot prefix parameter.
 
-## 3. Dual-Arm URDF/Xacro
+**Key Changes in denso_robot_hw.cpp:**
+
+The hardware interface now reads a `robot_prefix` parameter and constructs joint names dynamically:
+
+```cpp
+std::string joint_prefix;  // gnq
+std::string prefix_param;
+if (!nh.getParam("robot_prefix", prefix_param))
+{
+  ROS_WARN("No 'robot_prefix' param found, use default 'joint_'");
+  joint_prefix = "joint_";
+}
+else
+{
+  joint_prefix = prefix_param + "_joint_";
+  ROS_WARN_STREAM("Using joint prefix: " << joint_prefix);
+}
+```
+
+This modification ensures that:
+- Each robot arm can have unique joint names (e.g., `vs068l_joint_1`, `vs068r_joint_1`)
+- The hardware interface automatically generates the correct joint names based on the prefix
+- The system maintains compatibility with both single and dual-arm configurations
+
+---
+
+## 4. Dual-Arm URDF/Xacro
 
 - The dual-arm robot is described in `dual_vs068/urdf/dual_vs068.urdf.xacro`.
 - It includes both left and right arm descriptions and fixes them to the world frame with appropriate offsets.
@@ -94,9 +143,9 @@ or
 
 ---
 
-## 4. Controller and Launch Configuration
+## 5. Controller and Launch Configuration
 
-### 4.1. Modified Launch: denso_robot_control_modify.launch
+### 5.1. Modified Launch: denso_robot_control_modify.launch
 
 A new launch file `denso_robot_control_modify.launch` is provided in `denso_robot_control/launch/`.  
 This file allows you to flexibly specify the robot's IP address, name, and other parameters, and loads all necessary description/configuration files for each arm.
@@ -110,7 +159,7 @@ This file allows you to flexibly specify the robot's IP address, name, and other
 ``` -->
 <!-- This launch file simplifies the process of bringing up each DENSO robot arm with custom parameters. -->
 
-### 4.2. Dual Arm Bringup Launch
+### 5.2. Dual Arm Bringup Launch
 
 - The launch file `dual_vs068/launch/dual_vs068_bringup.launch` starts both arms, their controllers, and the joint state merger node.
 
@@ -155,7 +204,7 @@ This file allows you to flexibly specify the robot's IP address, name, and other
 
 ---
 
-## 5. Joint State Merger Node
+## 6. Joint State Merger Node
 
 - The script `dual_vs068/scripts/merge_joint_states.py` merges joint states from both arms and republishes them on `/joint_states`.
 
@@ -207,15 +256,15 @@ if __name__ == '__main__':
 
 ---
 
-## 6. MoveIt Configuration
+## 7. MoveIt Configuration
 
-### 6.1. Build the MoveIt configuration by running: 
+### 7.1. Build the MoveIt configuration by running: 
 ```bash
 rosrun moveit_setup_assistant moveit_setup_assistant.
 ```
 Then configure your MoveIt setup using the dual-arm URDF or Xacro file.
 
-### 6.1. Controller Configuration
+### 7.1. Controller Configuration
 
 - The file `dual_vs068_moveit_config/config/ros_controllers.yaml` should define controllers for both arms:
 
@@ -246,7 +295,7 @@ controller_list:
       - vs068r_joint_6
 ```
 
-### 6.2. MoveIt Launch Setup
+### 7.2. MoveIt Launch Setup
 
 - Configure `dual_vs068_moveit_config/launch/dual_vs068_moveit.launch` to launch MoveIt for the dual-arm robot.
 
@@ -275,7 +324,7 @@ controller_list:
 
 ---
 
-## 7. Running the Dual-Arm System
+## 8. Running the Dual-Arm System
 
 1. **Bring up both arms and the merger node:**
    ```bash
@@ -287,7 +336,7 @@ controller_list:
    roslaunch dual_vs068_moveit_config dual_vs068_moveit.launch
    ```
 
-#### 7.1. One-Step Launch for Dual-Arm System
+#### 8.1. One-Step Launch for Dual-Arm System
 
 You can now launch both arms and MoveIt in a single step using the new launch file:
 
@@ -298,7 +347,7 @@ roslaunch dual_vs068 dual_vs068_full.launch
 
 ---
 
-## 8. Notes
+## 9. Notes
 
 - Ensure all IP addresses and parameters match your hardware setup.
 - The joint state merger is essential for MoveIt to plan for both arms simultaneously.
@@ -306,13 +355,13 @@ roslaunch dual_vs068 dual_vs068_full.launch
 
 ---
 
-## 9. References
+## 10. References
 
 - [Denso robot ros](https://wiki.ros.org/denso_robot_ros)
 
 ---
 
-## 10. Example: Successful Launch Visualization
+## 11. Example: Successful Launch Visualization
 
 Below is a screenshot of a successful launch, showing both DENSO VS068 arms in RViz:
 
@@ -322,3 +371,21 @@ Below is a screenshot of a successful launch, showing both DENSO VS068 arms in R
 ---
 
 This guide should help you or others in your team to set up and control a dual-arm DENSO VS068 robot system using ROS and MoveIt. If you need more details on any step, please refer to the corresponding files in the repository or ask for further clarification.
+
+---
+
+## 12. Single Arm Support
+
+The codebase also supports single arm operation. You can launch a single VS068 robot arm using the standard denso_robot_bringup launch files with appropriate parameters:
+
+**For Right Arm:**
+```bash
+roslaunch denso_robot_bringup vs068r_bringup.launch sim:=false ip_address:=10.240.48.96
+```
+
+**For Left Arm:**
+```bash
+roslaunch denso_robot_bringup vs068l_bringup.launch sim:=false ip_address:=10.240.48.66
+```
+
+The single arm configuration uses the same hardware interface modifications described in section 2.1.2, ensuring consistent joint naming and controller compatibility across both single and dual-arm setups.
