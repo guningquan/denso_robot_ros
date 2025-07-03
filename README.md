@@ -13,6 +13,12 @@ Before proceeding, please refer to the official [denso_robot_ros Wiki](https://w
 
 These packages should each contain the necessary mesh files, URDF/Xacro files, and configuration files for a single VS-068 robot. This step ensures that both arms are properly described and ready for integration into the dual-arm system.
 
+---
+
+## 2. Joint Naming and Configuration Setup
+
+This section covers the essential configuration changes required for proper dual-arm operation, including joint naming conventions and launch file modifications.
+
 ### 2.1. Update Joint Names for Consistency
 
 When creating or modifying the description and configuration files, ensure that all joint names follow the convention:
@@ -355,13 +361,7 @@ roslaunch dual_vs068 dual_vs068_full.launch
 
 ---
 
-## 10. References
-
-- [Denso robot ros](https://wiki.ros.org/denso_robot_ros)
-
----
-
-## 11. Example: Successful Launch Visualization
+## 10. Example: Successful Launch Visualization
 
 Below is a screenshot of a successful launch, showing both DENSO VS068 arms in RViz:
 
@@ -374,7 +374,7 @@ This guide should help you or others in your team to set up and control a dual-a
 
 ---
 
-## 12. Single Arm Support
+## 11. Single Arm Support
 
 The codebase also supports single arm operation. You can launch a single VS068 robot arm using the standard denso_robot_bringup launch files with appropriate parameters:
 
